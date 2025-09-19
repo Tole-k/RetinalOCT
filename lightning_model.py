@@ -17,7 +17,7 @@ class Model(L.LightningModule):
         self.head = nn.Linear(1024, 4)
         self.loss = nn.CrossEntropyLoss()
         self.acc = Accuracy("multiclass", num_classes=4)
-        self.auc = AUROC("multiclass", num_classes=4)
+        # self.auc = AUROC("multiclass", num_classes=4)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.head(self.backbone(x))
@@ -30,9 +30,13 @@ class Model(L.LightningModule):
     def validation_step(self, batch, batch_id: int) -> torch.Tensor:
         loss, outputs, y = self._step(batch)
         acc = self.acc(outputs, y)
-        auc = self.auc(outputs, y)
+        # auc = self.auc(outputs, y)
         self.log_dict(
-            {"validation loss": loss, "validation accuracy": acc, "validation auc": auc},
+            {
+                "validation loss": loss,
+                "validation accuracy": acc,
+                # "validation auc": auc
+            },
             on_step=True,
             on_epoch=True,
             prog_bar=True,
@@ -43,9 +47,13 @@ class Model(L.LightningModule):
     def test_step(self, batch, batch_id: int) -> torch.Tensor:
         loss, outputs, y = self._step(batch)
         acc = self.acc(outputs, y)
-        auc = self.auc(outputs, y)
+        # auc = self.auc(outputs, y)
         self.log_dict(
-            {"validation loss": loss, "validation accuracy": acc, "validation auc": auc},
+            {
+                "validation loss": loss,
+                "validation accuracy": acc,
+                # "validation auc": auc
+            },
             on_step=True,
             on_epoch=True,
             prog_bar=True,
