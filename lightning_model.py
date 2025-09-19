@@ -84,7 +84,7 @@ if __name__ == "__main__":
     model = Model()
     backbone_ft = BackboneFinetuning()
     early_stopping = EarlyStopping("validation loss")
-    dm = ImageDataModule(8, 4)
+    dm = ImageDataModule(256, 16)
     trainer = L.Trainer(
         accelerator="gpu",
         devices="auto",
