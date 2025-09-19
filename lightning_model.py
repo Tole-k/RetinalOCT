@@ -72,7 +72,7 @@ class Model(L.LightningModule):
         return loss, outputs, y
 
     def configure_optimizers(self) -> optim.Optimizer:
-        return optim.AdamW(self.parameters())
+        return optim.AdamW(filter(lambda p: p.requires_grad,self.parameters()))
 
 
 if __name__ == "__main__":
