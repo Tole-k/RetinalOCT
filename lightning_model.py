@@ -72,7 +72,7 @@ if __name__ == "__main__":
     from dataset_download import ImageDataModule
     import torch
 
-
+    torch.set_float32_matmul_precision("medium")
     model = Model()
     backbone_ft = BackboneFinetuning()
     early_stopping = EarlyStopping("validation loss")
