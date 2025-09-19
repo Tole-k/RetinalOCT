@@ -24,7 +24,7 @@ class Model(L.LightningModule):
 
     def training_step(self, batch: torch.Tensor, batch_id: int) -> torch.Tensor:
         loss, _, _ = self._step(batch)
-        self.log("train loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        self.log("train loss", loss, on_step=True, prog_bar=True, logger=True)
         return loss
 
     def validation_step(self, batch, batch_id: int) -> torch.Tensor:
@@ -37,7 +37,6 @@ class Model(L.LightningModule):
                 "val acc": acc,
                 # "validation auc": auc
             },
-            on_step=True,
             on_epoch=True,
             prog_bar=True,
             logger=True,
@@ -54,7 +53,6 @@ class Model(L.LightningModule):
                 "test acc": acc,
                 # "validation auc": auc
             },
-            on_step=True,
             on_epoch=True,
             prog_bar=True,
             logger=True,
