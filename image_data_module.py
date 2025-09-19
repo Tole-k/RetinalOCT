@@ -22,10 +22,10 @@ class ImageDataModule(L.LightningDataModule):
         self.test_ds = ImageFolder(os.path.join(self.path, "OCT2017 ", "test"), self.transforms)
 
     def train_dataloader(self):
-        return DataLoader(self.train_ds, self.batch_size, True, num_workers=self.num_workers)
+        return DataLoader(dataset=self.train_ds, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
 
     def val_dataloader(self):
-        return DataLoader(self.val_ds, self.batch_size, num_workers=self.num_workers)
+        return DataLoader(dataset=self.val_ds, batch_size=self.batch_size, num_workers=self.num_workers)
 
     def test_dataloader(self):
-        return DataLoader(self.test_ds, self.batch_size, num_workers=self.num_workers)
+        return DataLoader(dataset=self.test_ds, batch_size=self.batch_size, num_workers=self.num_workers)
