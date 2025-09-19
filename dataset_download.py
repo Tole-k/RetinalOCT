@@ -15,9 +15,9 @@ class ImageDataModule(L.LightningDataModule):
         self.path = kagglehub.dataset_download("paultimothymooney/kermany2018")
 
     def setup(self, stage: str) -> None:
-        self.train_ds = ImageFolder(os.path.join(self.path, "OCT2017", "train"))
-        self.val_ds = ImageFolder(os.path.join(self.path, "OCT2017", "val"))
-        self.test_ds = ImageFolder(os.path.join(self.path, "OCT2017", "test"))
+        self.train_ds = ImageFolder(os.path.join(self.path, "OCT2017 ", "train"))
+        self.val_ds = ImageFolder(os.path.join(self.path, "OCT2017 ", "val"))
+        self.test_ds = ImageFolder(os.path.join(self.path, "OCT2017 ", "test"))
 
     def train_dataloader(self):
         return DataLoader(self.train_ds, self.batch_size, True, num_workers=self.num_workers)
