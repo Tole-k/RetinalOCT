@@ -33,8 +33,8 @@ class Model(L.LightningModule):
         # auc = self.auc(outputs, y)
         self.log_dict(
             {
-                "validation loss": loss,
-                "validation accuracy": acc,
+                "val loss": loss,
+                "val acc": acc,
                 # "validation auc": auc
             },
             on_step=True,
@@ -50,8 +50,8 @@ class Model(L.LightningModule):
         # auc = self.auc(outputs, y)
         self.log_dict(
             {
-                "validation loss": loss,
-                "validation accuracy": acc,
+                "test loss": loss,
+                "test acc": acc,
                 # "validation auc": auc
             },
             on_step=True,
@@ -76,14 +76,15 @@ class Model(L.LightningModule):
 
 
 if __name__ == "__main__":
-    from lightning.pytorch.callbacks import BackboneFinetuning, EarlyStopping
+    from lightning.pytorch.callbacks import BackboneFinetuning, EarlyStopping, DeviceStatsMonitor
     from image_data_module import ImageDataModule
     import torch
 
     torch.set_float32_matmul_precision("medium")
     model = Model()
     backbone_ft = BackboneFinetuning(5)
-    early_stopping = EarlyStopping("validation loss", patience=5)
+    early_stopping = EarlyStopping("val loss", patience=5)
+    device_stast = DeviceStatsMonitor()
     dm = ImageDataModule(256, 4)
     trainer = L.Trainer(
         accelerator="gpu",
@@ -95,5 +96,5 @@ if __name__ == "__main__":
         fast_dev_run=1,
     )
     trainer.fit(model, dm)
-    trainer = L.Trainer(accelerator="gpu", devices="auto", logger=True, precision="16-mixed", callbacks=[backbone_ft, early_stopping])
+    trainer = L.Trainer(accelerator="gpu", devices="auto", logger=True, precision="16-mixed", callbacks=[backbone_ft, early_stopping, device_stast])
     trainer.fit(model, dm)
