@@ -83,7 +83,7 @@ if __name__ == "__main__":
     torch.set_float32_matmul_precision("medium")
     model = Model()
     backbone_ft = BackboneFinetuning(5)
-    early_stopping = EarlyStopping("validation loss",5)
+    early_stopping = EarlyStopping("validation loss", patience=5)
     dm = ImageDataModule(256, 4)
     trainer = L.Trainer(
         accelerator="gpu",
