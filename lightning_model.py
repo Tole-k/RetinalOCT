@@ -11,7 +11,9 @@ import numpy as np
 class Model(L.LightningModule):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.backbone = get_model("swin_v2_b", weights="DEFAULT")
+        backbone = get_model("swin_v2_b", weights="DEFAULT")
+        backbone.head = nn.Identity()
+        self.backbone = backbone
         self.head = nn.Linear(1024, 4)
         self.loss = nn.CrossEntropyLoss()
         self.acc = Accuracy("multiclass", num_classes=4)
@@ -70,22 +72,22 @@ if __name__ == "__main__":
     from dataset_download import ImageDataModule
     import torch
 
-    torch.set_float32_matmul_precision("medium")
+
     model = Model()
     backbone_ft = BackboneFinetuning()
     early_stopping = EarlyStopping("validation loss")
-    dm = ImageDataModule(128, 16)
+    dm = ImageDataModule(8, 4)
     trainer = L.Trainer(
         accelerator="gpu",
         devices="auto",
         logger=True,
         precision="16-mixed",
         callbacks=[backbone_ft, early_stopping],
-        profiler="simple",
+        enable_checkpointing=False,
         fast_dev_run=1,
     )
     trainer.fit(model, dm)
     trainer = L.Trainer(
-        accelerator="gpu", devices="auto", logger=True, precision="16-mixed", callbacks=[backbone_ft, early_stopping], profiler="simple"
+        accelerator="gpu", devices="auto", logger=True, precision="16-mixed", callbacks=[backbone_ft, early_stopping]
     )
     trainer.fit(model, dm)
