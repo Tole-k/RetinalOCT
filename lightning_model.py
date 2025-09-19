@@ -96,3 +96,4 @@ if __name__ == "__main__":
     trainer.fit(model, dm)
     trainer = L.Trainer(accelerator="gpu", devices="auto", logger=True, precision="16-mixed", callbacks=[backbone_ft, early_stopping, device_stast])
     trainer.fit(model, dm)
+    trainer.test(model,dm)
