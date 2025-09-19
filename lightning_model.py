@@ -72,12 +72,12 @@ class Model(L.LightningModule):
         return loss, outputs, y
 
     def configure_optimizers(self) -> optim.Optimizer:
-        return optim.AdamW(filter(lambda p: p.requires_grad,self.parameters()))
+        return optim.AdamW(filter(lambda p: p.requires_grad, self.parameters()))
 
 
 if __name__ == "__main__":
     from lightning.pytorch.callbacks import BackboneFinetuning, EarlyStopping
-    from dataset_download import ImageDataModule
+    from image_data_module import ImageDataModule
     import torch
 
     torch.set_float32_matmul_precision("medium")
@@ -95,7 +95,5 @@ if __name__ == "__main__":
         fast_dev_run=1,
     )
     trainer.fit(model, dm)
-    trainer = L.Trainer(
-        accelerator="gpu", devices="auto", logger=True, precision="16-mixed", callbacks=[backbone_ft, early_stopping]
-    )
+    trainer = L.Trainer(accelerator="gpu", devices="auto", logger=True, precision="16-mixed", callbacks=[backbone_ft, early_stopping])
     trainer.fit(model, dm)
