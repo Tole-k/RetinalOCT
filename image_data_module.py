@@ -1,9 +1,10 @@
+import os
+
 import kagglehub
 import lightning as L
-from torchvision.datasets import ImageFolder
-from torchvision import transforms
 from torch.utils.data import DataLoader
-import os
+from torchvision import transforms
+from torchvision.datasets import ImageFolder
 
 
 class ImageDataModule(L.LightningDataModule):
