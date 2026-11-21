@@ -5,8 +5,22 @@ import lightning as L
 import numpy as np
 import torch
 from torch import nn, optim
+from torch.utils.checkpoint import checkpoint_sequential
 from torchmetrics import AUROC, Accuracy
 from torchvision.models import get_model
+
+
+class CheckpointedSwinFeatures(nn.Sequential):
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        if not self.training or not torch.is_grad_enabled():
+            return super().forward(input)
+
+        for layer in self:
+            if isinstance(layer, nn.Sequential):
+                input = checkpoint_sequential(layer, len(layer), input, use_reentrant=False)
+            else:
+                input = layer(input)
+        return input
 
 
 class Model(L.LightningModule):
@@ -75,6 +89,9 @@ class Model(L.LightningModule):
 
 
 if __name__ == "__main__":
+    import argparse
+    from pathlib import Path
+
     import torch
     from lightning.pytorch.callbacks import (
         BackboneFinetuning,
@@ -87,29 +104,59 @@ if __name__ == "__main__":
 
     from image_data_module import ImageDataModule
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--resume-from", type=Path, help="Lightning checkpoint to resume training from")
+    parser.add_argument("--wandb-run-id", help="Existing W&B run ID for resumed training")
+    parser.add_argument(
+        "--activation-checkpointing", action="store_true", help="Recompute Swin activations to save GPU memory"
+    )
+    args = parser.parse_args()
+
+    if bool(args.resume_from) != bool(args.wandb_run_id):
+        parser.error("supply --resume-from and --wandb-run-id together")
+
+    tensorboard_version = None
+    if args.resume_from is not None:
+        if not args.resume_from.is_file():
+            parser.error(f"checkpoint file does not exist: {args.resume_from}")
+        run_directory = args.resume_from.resolve().parent.parent
+        version = run_directory.name.removeprefix("version_")
+        if run_directory.parent == Path("lightning_logs").resolve() and version.isdecimal():
+            tensorboard_version = int(version)
+
     torch.set_float32_matmul_precision("medium")
-    model = Model()
+    model = Model(pretrained=args.resume_from is None)
+    if args.activation_checkpointing:
+        model.backbone.features = CheckpointedSwinFeatures(*model.backbone.features.children())
     backbone_ft = BackboneFinetuning(5)
     early_stopping = EarlyStopping("val loss", patience=5)
     device_stast = DeviceStatsMonitor()
     dm = ImageDataModule(128, 8)
-    trainer = L.Trainer(
-        accelerator="gpu",
-        devices="auto",
-        logger=True,
-        precision="16-mixed",
-        callbacks=[backbone_ft, early_stopping],
-        enable_checkpointing=False,
-        fast_dev_run=1,
-    )
-    trainer.fit(model, dm)
+    if args.resume_from is None:
+        trainer = L.Trainer(
+            accelerator="gpu",
+            devices="auto",
+            logger=True,
+            precision="16-mixed",
+            callbacks=[backbone_ft, early_stopping],
+            enable_checkpointing=False,
+            fast_dev_run=1,
+        )
+        trainer.fit(model, dm)
     checkpoint = ModelCheckpoint(
         monitor="val loss",
         mode="min",
         save_top_k=1,
         filename="best-{epoch:02d}-{step}",
     )
-    loggers: list[Logger] = [TensorBoardLogger(save_dir="."),WandbLogger(project=os.getenv("WANDB_PROJECT", "retinaloct"))]
+    loggers: list[Logger] = [
+        TensorBoardLogger(save_dir=".", version=tensorboard_version),
+        WandbLogger(
+            project=os.getenv("WANDB_PROJECT", "retinaloct"),
+            id=args.wandb_run_id,
+            resume="must" if args.resume_from is not None else "allow",
+        ),
+    ]
 
     trainer = L.Trainer(
         accelerator="gpu",
@@ -118,6 +165,6 @@ if __name__ == "__main__":
         precision="16-mixed",
         callbacks=[backbone_ft, early_stopping, device_stast, checkpoint],
     )
-    trainer.fit(model, dm)
+    trainer.fit(model, dm, ckpt_path=args.resume_from)
     rank_zero_info(f"Saved best model to {checkpoint.best_model_path}")
     trainer.test(model, dm, ckpt_path="best")
