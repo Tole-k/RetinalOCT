@@ -227,3 +227,4 @@ __marimo__/
 *.vsix
 
 lightning_logs/
+/wandb/

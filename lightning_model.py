@@ -1,3 +1,4 @@
+import os
 from typing import Any
 
 import lightning as L
@@ -51,7 +52,7 @@ class Model(L.LightningModule):
             {
                 "test loss": loss,
                 "test acc": acc,
-                "validation auc": auc
+                "test auc": auc
             },
             on_epoch=True,
             prog_bar=True,
@@ -81,6 +82,7 @@ if __name__ == "__main__":
         EarlyStopping,
         ModelCheckpoint,
     )
+    from lightning.pytorch.loggers import Logger, TensorBoardLogger, WandbLogger
     from lightning.pytorch.utilities import rank_zero_info
 
     from image_data_module import ImageDataModule
@@ -90,7 +92,7 @@ if __name__ == "__main__":
     backbone_ft = BackboneFinetuning(5)
     early_stopping = EarlyStopping("val loss", patience=5)
     device_stast = DeviceStatsMonitor()
-    dm = ImageDataModule(32, 4)
+    dm = ImageDataModule(128, 8)
     trainer = L.Trainer(
         accelerator="gpu",
         devices="auto",
@@ -107,10 +109,12 @@ if __name__ == "__main__":
         save_top_k=1,
         filename="best-{epoch:02d}-{step}",
     )
+    loggers: list[Logger] = [TensorBoardLogger(save_dir="."),WandbLogger(project=os.getenv("WANDB_PROJECT", "retinaloct"))]
+
     trainer = L.Trainer(
         accelerator="gpu",
         devices="auto",
-        logger=True,
+        logger=loggers,
         precision="16-mixed",
         callbacks=[backbone_ft, early_stopping, device_stast, checkpoint],
     )
