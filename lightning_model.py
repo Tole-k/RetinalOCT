@@ -4,6 +4,7 @@ from typing import Any
 import lightning as L
 import numpy as np
 import torch
+from lightning.pytorch.callbacks import BackboneFinetuning
 from torch import nn, optim
 from torch.utils.checkpoint import checkpoint_sequential
 from torchmetrics import AUROC, Accuracy
@@ -21,6 +22,17 @@ class CheckpointedSwinFeatures(nn.Sequential):
             else:
                 input = layer(input)
         return input
+
+
+class ResumableBackboneFinetuning(BackboneFinetuning):
+    @property
+    def state_key(self) -> str:
+        return BackboneFinetuning.__qualname__
+
+    def on_fit_start(self, trainer: L.Trainer, pl_module: L.LightningModule) -> None:
+        super().on_fit_start(trainer, pl_module)
+        if self.previous_backbone_lr is not None:
+            self.make_trainable(pl_module.backbone)
 
 
 class Model(L.LightningModule):
@@ -94,7 +106,6 @@ if __name__ == "__main__":
 
     import torch
     from lightning.pytorch.callbacks import (
-        BackboneFinetuning,
         DeviceStatsMonitor,
         EarlyStopping,
         ModelCheckpoint,
@@ -128,7 +139,7 @@ if __name__ == "__main__":
     model = Model(pretrained=args.resume_from is None)
     if args.activation_checkpointing:
         model.backbone.features = CheckpointedSwinFeatures(*model.backbone.features.children())
-    backbone_ft = BackboneFinetuning(5)
+    backbone_ft = ResumableBackboneFinetuning(5)
     early_stopping = EarlyStopping("val loss", patience=5)
     device_stast = DeviceStatsMonitor()
     dm = ImageDataModule(128, 8)
