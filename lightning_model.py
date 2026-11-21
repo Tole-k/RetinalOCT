@@ -9,9 +9,9 @@ from torchvision.models import get_model
 
 
 class Model(L.LightningModule):
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, pretrained: bool = True, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        backbone = get_model("swin_v2_b", weights="DEFAULT")
+        backbone = get_model("swin_v2_b", weights="DEFAULT" if pretrained else None)
         backbone.head = nn.Identity()
         self.backbone = backbone
         self.head = nn.Linear(1024, 4)
@@ -31,9 +31,9 @@ class Model(L.LightningModule):
         loss, outputs, y = self._step(batch)
         acc = self.acc(outputs, y)
         auc = self.auc(outputs, y)
+        self.log("val loss", loss, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
         self.log_dict(
             {
-                "val loss": loss,
                 "val acc": acc,
                 "validation auc": auc
             },
@@ -79,7 +79,9 @@ if __name__ == "__main__":
         BackboneFinetuning,
         DeviceStatsMonitor,
         EarlyStopping,
+        ModelCheckpoint,
     )
+    from lightning.pytorch.utilities import rank_zero_info
 
     from image_data_module import ImageDataModule
 
@@ -99,6 +101,19 @@ if __name__ == "__main__":
         fast_dev_run=1,
     )
     trainer.fit(model, dm)
-    trainer = L.Trainer(accelerator="gpu", devices="auto", logger=True, precision="16-mixed", callbacks=[backbone_ft, early_stopping, device_stast])
+    checkpoint = ModelCheckpoint(
+        monitor="val loss",
+        mode="min",
+        save_top_k=1,
+        filename="best-{epoch:02d}-{step}",
+    )
+    trainer = L.Trainer(
+        accelerator="gpu",
+        devices="auto",
+        logger=True,
+        precision="16-mixed",
+        callbacks=[backbone_ft, early_stopping, device_stast, checkpoint],
+    )
     trainer.fit(model, dm)
-    trainer.test(model,dm)
+    rank_zero_info(f"Saved best model to {checkpoint.best_model_path}")
+    trainer.test(model, dm, ckpt_path="best")
