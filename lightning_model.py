@@ -1,11 +1,11 @@
 from typing import Any
-import lightning as L
 
-from torchvision.models import get_model
+import lightning as L
+import numpy as np
 import torch
 from torch import nn, optim
-from torchmetrics import Accuracy, AUROC
-import numpy as np
+from torchmetrics import AUROC, Accuracy
+from torchvision.models import get_model
 
 
 class Model(L.LightningModule):
@@ -17,7 +17,7 @@ class Model(L.LightningModule):
         self.head = nn.Linear(1024, 4)
         self.loss = nn.CrossEntropyLoss()
         self.acc = Accuracy("multiclass", num_classes=4)
-        # self.auc = AUROC("multiclass", num_classes=4)
+        self.auc = AUROC("multiclass", num_classes=4)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.head(self.backbone(x))
@@ -30,12 +30,12 @@ class Model(L.LightningModule):
     def validation_step(self, batch, batch_id: int) -> torch.Tensor:
         loss, outputs, y = self._step(batch)
         acc = self.acc(outputs, y)
-        # auc = self.auc(outputs, y)
+        auc = self.auc(outputs, y)
         self.log_dict(
             {
                 "val loss": loss,
                 "val acc": acc,
-                # "validation auc": auc
+                "validation auc": auc
             },
             on_epoch=True,
             prog_bar=True,
@@ -46,12 +46,12 @@ class Model(L.LightningModule):
     def test_step(self, batch, batch_id: int) -> torch.Tensor:
         loss, outputs, y = self._step(batch)
         acc = self.acc(outputs, y)
-        # auc = self.auc(outputs, y)
+        auc = self.auc(outputs, y)
         self.log_dict(
             {
                 "test loss": loss,
                 "test acc": acc,
-                # "validation auc": auc
+                "validation auc": auc
             },
             on_epoch=True,
             prog_bar=True,
@@ -74,16 +74,21 @@ class Model(L.LightningModule):
 
 
 if __name__ == "__main__":
-    from lightning.pytorch.callbacks import BackboneFinetuning, EarlyStopping, DeviceStatsMonitor
-    from image_data_module import ImageDataModule
     import torch
+    from lightning.pytorch.callbacks import (
+        BackboneFinetuning,
+        DeviceStatsMonitor,
+        EarlyStopping,
+    )
+
+    from image_data_module import ImageDataModule
 
     torch.set_float32_matmul_precision("medium")
     model = Model()
     backbone_ft = BackboneFinetuning(5)
     early_stopping = EarlyStopping("val loss", patience=5)
     device_stast = DeviceStatsMonitor()
-    dm = ImageDataModule(256, 4)
+    dm = ImageDataModule(32, 4)
     trainer = L.Trainer(
         accelerator="gpu",
         devices="auto",

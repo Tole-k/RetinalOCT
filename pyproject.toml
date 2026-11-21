@@ -3,11 +3,11 @@ name = "retinaloct"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.14"
 dependencies = [
     "kaggle>=1.7.4.5",
     "kagglehub>=0.3.13",
-    "lightning[extra]>=2.5.5",
+    "lightning[extra]>=2.6.6",
     "tensorboard>=2.20.0",
     "torch>=2.8.0",
     "torchmetrics>=1.8.2",
