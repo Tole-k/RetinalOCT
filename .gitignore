@@ -228,3 +228,5 @@ __marimo__/
 
 lightning_logs/
 /wandb/
+/triton_model_repository/
+/triton_benchmarks/
