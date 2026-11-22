@@ -8,11 +8,17 @@ engine="$model/1/model.plan"
 
 [[ -s "$repository/model.onnx" ]] || { printf 'Run export_triton.py first.\n' >&2; exit 1; }
 batch_size=$(sed -nE 's/^[[:blank:]]*max_batch_size[[:blank:]]*:[[:blank:]]*([0-9]+)\b.*/\1/p' "$model/configs/batched.pbtxt")
-unbatched_size=$(sed -nE 's/^[[:blank:]]*max_batch_size[[:blank:]]*:[[:blank:]]*([0-9]+)\b.*/\1/p' "$model/configs/unbatched.pbtxt")
-if [[ ! "$batch_size" =~ ^[0-9]+$ || "$batch_size" != "$unbatched_size" ]] || (( batch_size < 2 )); then
-    printf 'Both configurations must declare the same max_batch_size of at least 2.\n' >&2
+if [[ ! "$batch_size" =~ ^[0-9]+$ ]] || (( batch_size < 2 )); then
+    printf 'The batched config must declare a max_batch_size of at least 2.\n' >&2
     exit 1
 fi
+for mode in unbatched quick_batched; do
+    mode_batch_size=$(sed -nE 's/^[[:blank:]]*max_batch_size[[:blank:]]*:[[:blank:]]*([0-9]+)\b.*/\1/p' "$model/configs/$mode.pbtxt")
+    if [[ "$mode_batch_size" != "$batch_size" ]]; then
+        printf 'The %s config must also declare max_batch_size: %s.\n' "$mode" "$batch_size" >&2
+        exit 1
+    fi
+done
 opt_size=$((batch_size < 4 ? batch_size : 4))
 
 mkdir -p -- "$model/1"

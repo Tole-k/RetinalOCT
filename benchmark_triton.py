@@ -1,4 +1,4 @@
-"""Benchmark the running Triton server and summarize both scheduling modes."""
+"""Benchmark the running Triton server and summarize its scheduling modes."""
 
 import argparse
 import asyncio
@@ -109,7 +109,12 @@ async def benchmark(repository: Path, url: str, run_name: str) -> None:
             response.raise_for_status()
             config = await response.json()
         scheduler = config.pop("dynamic_batching", None)
-        mode = "batched" if scheduler is not None else "unbatched"
+        if scheduler is None:
+            mode = "unbatched"
+        elif int(scheduler.get("max_queue_delay_microseconds", 0)) == 0:
+            mode = "quick_batched"
+        else:
+            mode = "batched"
         if config.get("platform") != "tensorrt_plan" or config.get("max_batch_size", 0) < 2:
             raise RuntimeError("Expected the shared batch-capable TensorRT model")
         body, offset = await infer(session, f"{endpoint}/infer", request)

@@ -70,7 +70,7 @@ def main() -> None:
 
     repository = args.repository.resolve()
     batch_sizes = []
-    for mode in ("batched", "unbatched"):
+    for mode in ("batched", "unbatched", "quick_batched"):
         config = repository / "retinaloct" / "configs" / f"{mode}.pbtxt"
         if not config.is_file():
             parser.error(f"expected an existing Triton configuration at {config}")
@@ -78,9 +78,9 @@ def main() -> None:
         if batch_size is None:
             parser.error(f"missing max_batch_size in {config}")
         batch_sizes.append(int(batch_size[1]))
-    max_batch_size, unbatched_max = batch_sizes
-    if max_batch_size < 2 or max_batch_size != unbatched_max:
-        parser.error("both configurations must declare the same max_batch_size of at least 2")
+    max_batch_size = batch_sizes[0]
+    if max_batch_size < 2 or len(set(batch_sizes)) != 1:
+        parser.error("all configurations must declare the same max_batch_size of at least 2")
 
     checkpoint = args.checkpoint or find_best_checkpoint(LOGS_DIRECTORY)
     if checkpoint is None:

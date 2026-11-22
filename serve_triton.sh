@@ -2,8 +2,8 @@
 set -euo pipefail
 
 case "${1:-}" in
-    batched|unbatched) mode=$1 ;;
-    *) printf 'Usage: bash serve_triton.sh {batched|unbatched} [REPOSITORY]\n' >&2; exit 2 ;;
+    quick_batched|batched|unbatched) mode=$1 ;;
+    *) printf 'Usage: bash serve_triton.sh {unbatched|batched|quick_batched} [REPOSITORY]\n' >&2; exit 2 ;;
 esac
 
 project=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
