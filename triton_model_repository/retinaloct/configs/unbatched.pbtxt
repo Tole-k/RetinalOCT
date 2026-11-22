@@ -1,6 +1,6 @@
 name: "retinaloct"
 platform: "tensorrt_plan"
-max_batch_size: 8
+max_batch_size: 32
 input [{ name: "images" data_type: TYPE_FP32 dims: [3, 256, 256] }]
 output [{ name: "logits" data_type: TYPE_FP32 dims: [4] }]
 instance_group [{ kind: KIND_GPU count: 1 }]
