@@ -228,5 +228,7 @@ __marimo__/
 
 lightning_logs/
 /wandb/
-/triton_model_repository/
-/triton_benchmarks/
+/triton_model_repository/*
+!/triton_model_repository/retinaloct/
+/triton_model_repository/retinaloct/*
+!/triton_model_repository/retinaloct/configs/

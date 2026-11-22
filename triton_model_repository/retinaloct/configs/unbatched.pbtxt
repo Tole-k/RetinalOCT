@@ -1,4 +1,4 @@
-name: "retinaloct_dynamic"
+name: "retinaloct"
 platform: "tensorrt_plan"
 max_batch_size: 8
 input [{ name: "images" data_type: TYPE_FP32 dims: [3, 256, 256] }]
