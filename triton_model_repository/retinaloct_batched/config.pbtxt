@@ -1,0 +1,10 @@
+name: "retinaloct_dynamic"
+platform: "tensorrt_plan"
+max_batch_size: 8
+input [{ name: "images" data_type: TYPE_FP32 dims: [3, 256, 256] }]
+output [{ name: "logits" data_type: TYPE_FP32 dims: [4] }]
+instance_group [{ kind: KIND_GPU count: 1 }]
+
+dynamic_batching {
+  max_queue_delay_microseconds: 2000
+}
